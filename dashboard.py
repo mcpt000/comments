@@ -18,6 +18,7 @@ st.set_page_config(page_title = "Google Maps Dashboard",
 #page 1
 
 def requirements():
+    st.image('logomapa.png', width = 300)
     st.title("Google Maps Dashboard")
     st.subheader("Get insights about your business & competitors")
 

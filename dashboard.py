@@ -11,6 +11,9 @@ import pydeck as pdk
 import base64
 from fpdf import FPDF
 
+from tempfile import NamedTemporaryFile
+from sklearn.datasets import load_iris
+
 st.set_page_config(page_title = "Google Maps Dashboard",
     page_icon = "🗺️",
     layout = "wide")
@@ -18,45 +21,77 @@ st.set_page_config(page_title = "Google Maps Dashboard",
 #page 1
 
 def requirements():
-    st.image('logomapa.png', width = 300)
-    st.title("Google Maps Dashboard")
-    st.subheader("Get insights about your business & competitors")
-
-    business_name = st.text_input("Enter your business name")
-    latitude = st.text_input("Enter your business latitude")
-    longitude = st.text_input("Enter your business longitude")
-    #modifie according to the preprocessing
-    competitor_type = st.selectbox("Select your competitor type", ["Restaurants", "Hotels", "Shopping", "Entertainment", "Other"])
-    radius = st.text_input("Enter your business radius",'10 km')
-
-    st.markdown("*If you don't know the latitude and longitude of your business, click [here](https://www.google.com/maps).*")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        pass
+    with col2:
+        st.image('logo1.png')
+    with col3:
+        pass
+    st.markdown("<h1 style='text-align: center;'>Google Maps Dashboard</h1>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center;'> Get insights about your business & competitors </h3>", unsafe_allow_html=True)
     
-    radius = radius.split(' ')[0]
-    if business_name == "" or latitude == "" or longitude == "" or radius == "":
-        st.warning("Please fill in all the fields")
-    #check if the radius is a number
-    elif radius.isdigit() == False or int(radius) == 0 or int(radius)< 0:
-        st.warning("Please enter a valid radius")
-    #check if the latitude and longitude are in the correct range
-    elif float(latitude) < -90 or float(latitude) > 90 or float(longitude) < -180 or float(longitude) > 180:
-        st.warning("Please enter a valid latitude and longitude")
-    #check if a selection has been made
-    elif competitor_type == "Select your competitor type":
-        st.warning("Please select a competitor type")
+    col1,col2,col3 = st.columns([1,2,1])
+    with col1:
+        pass
+    with col2:
+        st.markdown("<h6 style='text-align: center;'> GUPY MAPS is a web app that will help you to know the position of your business in the digital market, know your metrics and those of the competition with just a few steps.  </h6>", unsafe_allow_html=True)
+        business_name = st.text_input("Enter your business name")
+        latitude = st.text_input("Enter your business latitude")
+        longitude = st.text_input("Enter your business longitude")
+        #modifie according to the preprocessing
+        competitor_type = st.selectbox("Select your competitor type", ["Restaurants", "Hotels", "Shopping", "Entertainment", "Other"])
+        radius = st.text_input("Enter your business radius in meters",'10000 m')
+        st.markdown("*If you don't know the latitude and longitude of your business, click [here](https://www.google.com/maps).*")
+    with col3:
+        pass
+    
+    def check(radius, latitude, longitude, competitor_type, business_name):
+        radius = radius.split(' ')[0]
+        if business_name == "" or latitude == "" or longitude == "" or radius == "":
+            st.warning("Please fill in all the fields")
+        #check if the radius is a number
+        elif radius.isdigit() == False or int(radius) == 0 or int(radius)< 0:
+            st.warning("Please enter a valid radius")
+        #check if the latitude and longitude are in the correct range
+        elif float(latitude) < -90 or float(latitude) > 90 or float(longitude) < -180 or float(longitude) > 180:
+            st.warning("Please enter a valid latitude and longitude")
+        #check if a selection has been made
+        elif competitor_type == "Select your competitor type":
+            st.warning("Please select a competitor type")
+        else:
+            return True
 
     if st.button("Submit"):
-        #remove the 'Km' from the radius
-        
-        dashboard(business_name, radius, latitude, longitude, competitor_type)
+        if check(radius, latitude, longitude, competitor_type, business_name):
+            dashboard(business_name, radius, latitude, longitude, competitor_type)
+
 
 def dashboard(business_name, radius, latitude, longitude, competitor_type):
     #two columns
-    col1, col2 = st.columns([1,5])
+    col1, col2 = st.columns([1,9])
 
     with col1:
+        st.markdown("""
+        <style>
+        img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        }
+        </style>
+        """, unsafe_allow_html=True)
         #image has to be the icon in the API
+        nombre_local_imagen = "icon.png" # El nombre con el que queremos guardarla
         imagen = requests.get('https://maps.gstatic.com/mapfiles/place_api/icons/v1/png_71/restaurant-71.png').content
-        st.image(imagen, width = 100)
+        with open(nombre_local_imagen, 'wb') as handler:
+            handler.write(imagen)
+
+        #imagen = requests.get('https://maps.gstatic.com/mapfiles/place_api/icons/v1/png_71/restaurant-71.png').content
+        
+        #rst.markdown("""<img src="icon.png" style="width:50%;">""", unsafe_allow_html=True)
+        st.image('icon.png')
+
     with col2:
         st.markdown("# {}" .format(business_name))
 
@@ -96,7 +131,7 @@ def dashboard(business_name, radius, latitude, longitude, competitor_type):
     #business address
     #business address from the API
     address = "Calle de la Cruz, 1, 28012 Madrid, Spain"
-    st.markdown("#### Address: {}" .format(address))
+    st.markdown("<h4  style='color :darkcyan;'> Address: {} </h4r>".format(address), unsafe_allow_html=True)
 
  
 
@@ -122,7 +157,7 @@ def dashboard(business_name, radius, latitude, longitude, competitor_type):
                 'ScatterplotLayer',
                 data=df,
                 get_position='[lon, lat]',
-                get_color='[200, 30, 0, 160]',
+                get_color='[221, 163, 178, 160]',
                 get_radius=200,
             ),
             #add the business location to the map in a different color
@@ -130,7 +165,7 @@ def dashboard(business_name, radius, latitude, longitude, competitor_type):
                 'ScatterplotLayer',
                 data=df.tail(1),
                 get_position='[lon, lat]',
-                get_color='[0, 170, 228, 160]',
+                get_color='[69, 133, 145, 160]',
                 get_radius=200,
             )
         ],
@@ -138,50 +173,43 @@ def dashboard(business_name, radius, latitude, longitude, competitor_type):
 
     col5, col6 = st.columns(2)
     with col5:
-        st.markdown("### Your business")
+        st.markdown("<h3 align='center' style='color :darkcyan;'> Your Business </h3>", unsafe_allow_html=True)
 
     with col6:  
-        st.markdown("### Competitors Average")
+        st.markdown("<h3 align='center' style='color :pink;'r> Competitors </h3>", unsafe_allow_html=True)
     
     col7, col8, col9, col10 = st.columns(4)
     with col7:
         your_reviews = 100
+        st.markdown('''
+        <div class="container">
+        ''', unsafe_allow_html=True)
         st.metric("Reviews", "{}" .format(your_reviews))
     
     with col8:
         your_comments = 100
+        st.markdown('''
+        <div class="container">
+        ''', unsafe_allow_html=True)
         st.metric("Comments", "{}" .format(your_comments))
 
     with col9:
         competitors_reviews = 100
+        st.markdown('''
+        <div class="container">
+        ''', unsafe_allow_html=True)
         st.metric("Reviews", "{}" .format(competitors_reviews))
     
     with col10:
         competitors_comments = 100
+        st.markdown('''
+        <div class="container">
+        ''', unsafe_allow_html=True)
         st.metric("Comments", "{}" .format(competitors_comments))
 
 
     ranking = 1
-    st.markdown("### Your business is \#{} in the ranking in a radius of {} km" .format(ranking, radius))
+    st.markdown("### Your business is \#{} in the ranking in a radius of {}" .format(ranking, radius))
 
-    #button to download the page as a pdf
-
-    report_text = st.text_input("Report Text")
-
-    export_as_pdf = st.button("Export Report")
-
-    def create_download_link(val, filename):
-        b64 = base64.b64encode(val)  # val looks like b'...'
-        return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}.pdf">Download file</a>'
-
-    if export_as_pdf:
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font('Arial', 'B', 16)
-        pdf.cell(40, 10, report_text)
-        
-        html = create_download_link(pdf.output(dest="S").encode("latin-1"), "test")
-
-        st.markdown(html, unsafe_allow_html=True)
 
 requirements()

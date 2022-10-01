@@ -5,7 +5,8 @@ import pandas as pd
 import numpy as np
 import requests
 import pydeck as pdk
-from Google_Maps_Project_V3 import search_my_place, nearby_places
+from Google_Maps_Project_V4 import search_my_place, nearby_places
+import json
 
 
 st.set_page_config(page_title = "Google Maps Dashboard",
@@ -49,14 +50,15 @@ def requirements():
         latitude = st.text_input("Enter your business latitude")
         longitude = st.text_input("Enter your business longitude")
         #modifie according to the preprocessing
-        competitor_type = st.selectbox("Select your competitor type", ["Restaurants", "Hotels", "Shopping", "Entertainment", "Other"])
+        #competitor_type = st.selectbox("Select your competitor type", ["Restaurants", "Hotels", "Shopping", "Entertainment", "Other"])
         radius = st.text_input("Enter your business radius in meters",'10000 m').replace(' m','')
+        
         
         place = {
             "name": business_name,
             "location":f'{latitude}, {longitude}',
-            "types": competitor_type,
-            "radius": radius
+            #"types": competitor_type,
+            "radius": "5"
         }
         st.markdown("*If you don't know the latitude and longitude of your business, click [here](https://www.google.com/maps).*")
     with col3:
@@ -65,13 +67,53 @@ def requirements():
     
 
     if st.button("Submit"):
-        if check(business_name=business_name, latitude=latitude, longitude=longitude, competitor_type=competitor_type, radius=radius):
+        if check(business_name=business_name, latitude=latitude, longitude=longitude, radius=radius):
             data_my_place = search_my_place(place)
-            data_nearby_places = nearby_places(place)
+            #data_nearby_places = nearby_places(place)
             place['general_data'] = data_my_place
-            place['nearby_places'] = data_nearby_places
-            st.write(place)
-            dashboard(place)
+            #place['nearby_places'] = data_nearby_places
+            #list of all types
+            place['types']= data_my_place['results'][0]['types']
+            #delete all non selected types from the list if not in selected in checkbox
+            #number_of_types = len(place['types'])
+            
+            type_filter = st.multiselect("Select the types of places you want to compare", place['types'], key='types')
+            #use session state to save the types
+            st.write(st.session_state['types'])
+
+            if st.button("next"):
+                if type_filter == []:
+                    st.warning("Please select at least one type")
+                else:
+                    place['types'] = type_filter
+                    data_nearby_places = nearby_places(place)
+                    place['nearby_places'] = data_nearby_places
+                    st.write(data_nearby_places)
+                    #st.write(place)
+                    return place
+            
+                
+
+
+            #st.write(place)
+            
+
+
+
+            #replace radius_fake by radius
+            place['radius'] = radius
+
+            data_nearby_places = nearby_places(place)
+
+            #if st.selectbox('type', place['types']):
+
+
+            #    dashboard(place)
+
+           # st.write(place)
+            #if st.button("Next"):
+             #   dashboard(place)
+            
         
         #if check(radius, latitude, longitude, competitor_type, business_name):
         #    dashboard(business_name, radius, latitude, longitude, competitor_type)
@@ -79,7 +121,7 @@ def requirements():
 
 def dashboard(place):
     business_name = place['name']
-    radius = place['radius']
+    #radius = place['radius']
     latitude, longitude = place['location'].split(', ')
     competitor_type = place['types']
     #two columns

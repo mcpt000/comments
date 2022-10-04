@@ -14,7 +14,7 @@ st.set_page_config(page_title = "Google Maps Dashboard",
     layout = "wide")
 
 #page 1
-def check(business_name='', latitude='', longitude='', competitor_type='', radius=''):
+def check(business_name='', latitude='', longitude='', radius=''):
     #radius = radius.split(' ')[0]
     if business_name == "" or latitude == "" or longitude == "" or radius == "":
         st.warning("Please fill in all the fields")
@@ -25,8 +25,8 @@ def check(business_name='', latitude='', longitude='', competitor_type='', radiu
     elif float(latitude) < -90 or float(latitude) > 90 or float(longitude) < -180 or float(longitude) > 180:
         st.warning("Please enter a valid latitude and longitude")
     #check if a selection has been made
-    elif competitor_type == "Select your competitor type":
-        st.warning("Please select a competitor type")
+    #elif competitor_type == "Select your competitor type":
+    #    st.warning("Please select a competitor type")
     else:
         return True
 
@@ -42,6 +42,7 @@ def requirements():
     st.markdown("<h3 style='text-align: center;'> Get insights about your business & competitors </h3>", unsafe_allow_html=True)
     
     col1,col2,col3 = st.columns([1,2,1])
+    types = []
     with col1:
         pass
     with col2:
@@ -58,72 +59,45 @@ def requirements():
             "name": business_name,
             "location":f'{latitude}, {longitude}',
             #"types": competitor_type,
-            "radius": "5"
+            "radius": radius
         }
         st.markdown("*If you don't know the latitude and longitude of your business, click [here](https://www.google.com/maps).*")
+
+        if check(business_name, latitude, longitude, radius) and len(types) == 0:
+            data_nearby_places = search_my_place(place)
+            place['general_data'] = data_nearby_places['results'][0]
+            types = data_nearby_places['results'][0]['types']
+        if check(business_name, latitude, longitude, radius) and len(types) > 0:
+            types_to_explore = st.multiselect("Select the types of places you want to compare", types, key='types')
+            place['place_to_explore'] = types_to_explore
+            button_submit = st.button("Submit", key='submit')
+            if types_to_explore and check(business_name, latitude, longitude, radius) and button_submit:
+                place['nearby_places'] = nearby_places(place)['results']
+                st.write(st.session_state)
+                st.write(place)
+                #call dashboard
+                
     with col3:
         pass
+    if st.session_state['submit']:
+        dashboard(place)
+    # if types_to_explore and check(business_name, latitude, longitude, radius) and st.button("Submit"):
+    #     dashboard(place)
     
-    
+ #name = "Chili's"
+ ##
+ ###Location
+ #latitude = "21.039850900933683"
+ #longitude = "-89.63091958246127"
 
-    if st.button("Submit"):
-        if check(business_name=business_name, latitude=latitude, longitude=longitude, radius=radius):
-            data_my_place = search_my_place(place)
-            #data_nearby_places = nearby_places(place)
-            place['general_data'] = data_my_place
-            #place['nearby_places'] = data_nearby_places
-            #list of all types
-            place['types']= data_my_place['results'][0]['types']
-            #delete all non selected types from the list if not in selected in checkbox
-            #number_of_types = len(place['types'])
-            
-            type_filter = st.multiselect("Select the types of places you want to compare", place['types'], key='types')
-            #use session state to save the types
-            st.write(st.session_state['types'])
-
-            if st.button("next"):
-                if type_filter == []:
-                    st.warning("Please select at least one type")
-                else:
-                    place['types'] = type_filter
-                    data_nearby_places = nearby_places(place)
-                    place['nearby_places'] = data_nearby_places
-                    st.write(data_nearby_places)
-                    #st.write(place)
-                    return place
-            
-                
-
-
-            #st.write(place)
-            
-
-
-
-            #replace radius_fake by radius
-            place['radius'] = radius
-
-            data_nearby_places = nearby_places(place)
-
-            #if st.selectbox('type', place['types']):
-
-
-            #    dashboard(place)
-
-           # st.write(place)
-            #if st.button("Next"):
-             #   dashboard(place)
-            
-        
-        #if check(radius, latitude, longitude, competitor_type, business_name):
-        #    dashboard(business_name, radius, latitude, longitude, competitor_type)
 
 
 def dashboard(place):
     business_name = place['name']
-    #radius = place['radius']
+    radius = place['radius']
     latitude, longitude = place['location'].split(', ')
-    competitor_type = place['types']
+    #competitor_type = place['place_to_explore']
+    #radius = 5
     #two columns
     col1, col2 = st.columns([1,9])
 
@@ -154,7 +128,7 @@ def dashboard(place):
     # print icon according to the points
     # poits from the API
     try:
-        points = place['general_data']['results'][0]['rating']
+        points = place['general_data']['rating']
     except:
         points = 0
 
@@ -183,16 +157,16 @@ def dashboard(place):
         #type of business
         #type of business from the API
         #type_of_business = ['restaurant', 'cafe', 'bar', 'bakery', 'meal_takeaway', 'meal_delivery']
-        type_of_business = place['general_data']['results'][0]['types']
+        type_of_business = place['general_data']['types']
         st.markdown("### Type of Business")
         for i in type_of_business:
             st.markdown("- {}" .format(i))
     
     #business address
     #business address from the API
-    aux = place['general_data']['results']
+    aux = place['general_data']
     try:
-        aux = aux[0]['vicinity']
+        aux = aux['vicinity']
     except:
         aux = 'No address found'
     address = aux#"Calle de la Cruz, 1, 28012 Madrid, Spain"
@@ -245,7 +219,7 @@ def dashboard(place):
     
     col7, col8, col9, col10 = st.columns(4)
     with col7:
-        your_reviews = place['general_data']['results'][0]['user_ratings_total']
+        your_reviews = place['general_data']['user_ratings_total']
         st.markdown('''
         <div class="container">
         ''', unsafe_allow_html=True)

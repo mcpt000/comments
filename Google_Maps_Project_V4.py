@@ -55,7 +55,7 @@ def nearby_places(place):
     params = {
         'location' : place['location'],
         'radius' : place['radius'],
-        'types' : place['types'],
+        'types' : place['place_to_explore'],
         'key' : API_KEY
     }
     

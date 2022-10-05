@@ -17,13 +17,13 @@ st.set_page_config(page_title = "Google Maps Dashboard",
 def check(business_name='', latitude='', longitude='', radius=''):
     #radius = radius.split(' ')[0]
     if business_name == "" or latitude == "" or longitude == "" or radius == "":
-        st.warning("Please fill in all the fields")
+        return "Please fill in all the fields"
     #check if the radius is a number
     elif radius.isdigit() == False or int(radius) == 0 or int(radius)< 0:
-        st.warning("Please enter a valid radius")
+        return "Please enter a valid radius"
     #check if the latitude and longitude are in the correct range
     elif float(latitude) < -90 or float(latitude) > 90 or float(longitude) < -180 or float(longitude) > 180:
-        st.warning("Please enter a valid latitude and longitude")
+        return "Please enter a valid latitude and longitude"
     #check if a selection has been made
     #elif competitor_type == "Select your competitor type":
     #    st.warning("Please select a competitor type")
@@ -62,16 +62,19 @@ def requirements():
             "radius": radius
         }
         st.markdown("*If you don't know the latitude and longitude of your business, click [here](https://www.google.com/maps).*")
-
-        if check(business_name, latitude, longitude, radius) and len(types) == 0:
+        validation = check(business_name, latitude, longitude, radius)
+        if validation == True and len(types) == 0:
             data_nearby_places = search_my_place(place)
             place['general_data'] = data_nearby_places['results'][0]
             types = data_nearby_places['results'][0]['types']
-        if check(business_name, latitude, longitude, radius) and len(types) > 0:
+        else:
+            st.warning(validation)
+        if validation == True and len(types) > 0:
             types_to_explore = st.multiselect("Select the types of places you want to compare", types, key='types')
             place['place_to_explore'] = types_to_explore
             button_submit = st.button("Submit", key='submit')
-            if types_to_explore and check(business_name, latitude, longitude, radius) and button_submit:
+
+            if types_to_explore and validation == True and button_submit:
                 place['nearby_places'] = nearby_places(place)['results']
                 st.write(st.session_state)
                 st.write(place)
@@ -79,8 +82,11 @@ def requirements():
                 
     with col3:
         pass
-    if st.session_state['submit']:
+
+    
+    if 'submit' in st.session_state and st.session_state['submit']:
         dashboard(place)
+        st.write(place)
     # if types_to_explore and check(business_name, latitude, longitude, radius) and st.button("Submit"):
     #     dashboard(place)
     
@@ -248,7 +254,79 @@ def dashboard(place):
 
 
     ranking = 1
-    st.markdown("### Your business is \#{} in the ranking in a radius of {}" .format(ranking, radius))
+    st.markdown("### Your business is \#{} in the ranking in a radius of {} m" .format(ranking, radius))
 
+st.markdown('''
+    <style>
+        #google-maps-dashboard > div > span{
+            color: #00006d;
+        }
 
+        @import "compass/css3";
+
+        $star-color: #f2b01e;
+        $star-default-color: #f0f0f0;
+        $background-color: #2a2a2a;
+
+        body {
+        background: $background-color;
+        padding: 3rem;
+        }
+
+        * {
+        box-sizing: border-box;
+        }
+
+        .rating-box {
+        color: $star-default-color;
+        text-shadow: 0px 1px 10px rgba(0, 0, 0, 1);
+        margin: 3rem auto;
+        height: 3rem;
+        width: 25rem;
+        }
+
+        .rating-star{
+        font-size: 3rem;
+        width: 3rem;
+        height: 3rem;
+        padding: 0 2rem;
+        position: relative;
+        display: block;
+        float:left;
+        }
+
+        .full-star:before {
+        color: $star-color;
+        content: "\2605";
+        position: absolute;
+        left: 0;
+        overflow: hidden;
+        }
+
+        .empty-star:before {
+        content: "\2605";
+        position: absolute;
+        left: 0;
+        overflow: hidden;
+        }
+
+        .half-star:before {
+        color: $star-color;
+        content: "\2605";
+        width: 50%;
+        position: absolute;
+        left: 0;
+        overflow: hidden;
+        }
+
+        .half-star:after {
+        content: '\2605';
+        position: absolute;
+        left: 1.5rem;
+        width: 50%;
+        text-indent: -1.5rem;
+        overflow: hidden;
+        }
+    </style>
+''', unsafe_allow_html=True)
 requirements()

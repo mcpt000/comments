@@ -95,6 +95,21 @@ def requirements():
     
     if 'submit' in st.session_state and st.session_state['submit'] and 'nearby_places' in place.keys():
         dashboard(place)
+        
+    export_pdf = st.button("Export to PDF", key='export')
+
+    if export_pdf:
+        #st.session_state['submit'] 
+        st.write(st.session_state)
+        st.balloons()
+        dashboard(place)
+        
+
+
+            
+            
+
+
         #st.write(place)
     # if types_to_explore and check(business_name, latitude, longitude, radius) and st.button("Submit"):
     #     dashboard(place)r
@@ -286,27 +301,8 @@ def dashboard(place):
     with col10:
         pass
     
-    export_as_pdf = st.button("Export Report")
     
-    if export_as_pdf:
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font('Arial', 'B', 16)
-        pdf.cell(40, 10, txt = "Google Maps Dashboard", ln = "1", align = "C")
-        pdf.image(logo1.png, 5, 5, 100, 50, align = "C")
-        pdf.cell(40, 10, txt = business_name, ln = "10", align = "C")
-        #pdf.add_page()
-        #pdf.image(tmpfile.name, 10, 10, 200, 100)
-        #pdf.add_page()
-        #pdf.image(tmpfile2.name, 10, 10, 200, 100)
-        #pdf.cell(200, 10, txt = "Grafica 2",
-             #ln = 1, align = 'C')
-        #pdf.add_page()
-        #pdf.write(5, 'No quiero ser chivato pero...')
-        #pdf.image(tmpfile.name, 5, 5, 100, 50)
-        #pdf.image(tmpfile2.name, 5, 5, 100, 50)
-        html = create_download_link(pdf.output(dest="S").encode("latin-1"), "testfile")
-        st.markdown(html, unsafe_allow_html=True)
+    
 
 st.markdown('''
     <style>

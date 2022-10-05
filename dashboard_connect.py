@@ -6,7 +6,7 @@ import numpy as np
 import requests
 import pydeck as pdk
 from Google_Maps_Project_V4 import search_my_place, nearby_places
-import json
+from pandas import json_normalize
 
 
 st.set_page_config(page_title = "Google Maps Dashboard",
@@ -77,18 +77,17 @@ def requirements():
             if types_to_explore and validation == True and button_submit:
                 place['nearby_places'] = nearby_places(place)['results']
                 st.write(st.session_state)
-                st.write(place)
-                #call dashboard
+                #st.write(place)
                 
     with col3:
         pass
 
     
-    if 'submit' in st.session_state and st.session_state['submit']:
+    if 'submit' in st.session_state and st.session_state['submit'] and 'nearby_places' in place.keys():
         dashboard(place)
-        st.write(place)
+        #st.write(place)
     # if types_to_explore and check(business_name, latitude, longitude, radius) and st.button("Submit"):
-    #     dashboard(place)
+    #     dashboard(place)r
     
  #name = "Chili's"
  ##
@@ -108,15 +107,6 @@ def dashboard(place):
     col1, col2 = st.columns([1,9])
 
     with col1:
-        st.markdown("""
-        <style>
-        img {
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-        }
-        </style>
-        """, unsafe_allow_html=True)
         #image has to be the icon in the API
         nombre_local_imagen = "icon.png" # El nombre con el que queremos guardarla
         imagen = requests.get('https://maps.gstatic.com/mapfiles/place_api/icons/v1/png_71/restaurant-71.png').content
@@ -152,17 +142,43 @@ def dashboard(place):
     col3, col4 = st.columns(2)
 
     with col3:
-    #business hours
-    #business hours from the API
-        hours = ['Monday: 10:00 - 20:00', 'Tuesday: 10:00 - 20:00', 'Wednesday: 10:00 - 20:00', 'Thursday: 10:00 - 20:00', 'Friday: 10:00 - 20:00', 'Saturday: 10:00 - 20:00', 'Sunday: 10:00 - 20:00']
-        st.markdown("### Business Hours")
-        for i in hours:
-            st.markdown('- {}'.format(i))
+        #rating from the API
+        try:
+            rating = place['general_data']['rating']
+        except:
+            rating < 0
+
+        #amount of reviews from the API
+        try:
+            reviews = place['general_data']['user_ratings_total']
+        except:
+            reviews < 0
+        
+        st.markdown("### Your rating is {}/5 based on {} reviews" .format(rating, reviews))
+
+        #Categorical price level from the API
+        try:
+            price_level = place['general_data']['price_level']
+        except:
+            price_level < 0
+        
+        if price_level == 0:
+            price_level = "Free 🥳"
+        elif price_level == 1:
+            price_level = "Inexpensive 💵"
+        elif price_level == 2:
+            price_level = "Moderate 💵"
+        elif price_level == 3:
+            price_level = "Expensive 💸"
+        elif price_level == 4:
+            price_level = "Very Expensive 💸"
+        
+        st.markdown("### The pricing here is {}" .format(price_level))
+        
 
     with col4:
         #type of business
         #type of business from the API
-        #type_of_business = ['restaurant', 'cafe', 'bar', 'bakery', 'meal_takeaway', 'meal_delivery']
         type_of_business = place['general_data']['types']
         st.markdown("### Type of Business")
         for i in type_of_business:
@@ -177,17 +193,21 @@ def dashboard(place):
         aux = 'No address found'
     address = aux#"Calle de la Cruz, 1, 28012 Madrid, Spain"
     st.markdown("<h4  style='color :darkcyan;'> Address: {} </h4r>".format(address), unsafe_allow_html=True)
-
  
 
-    #map
-    #map from the API
-    df = pd.DataFrame(
-    np.random.randn(10, 2) / [50, 50] + [float(latitude), float(longitude)],
-    columns=['lat', 'lon'])
+    #map with the business location of competitors from the API
+    df = json_normalize(place['nearby_places'])
+    #only the columns we need lat and lng
+    df = df[['geometry.location.lat', 'geometry.location.lng']]
+    #rename the columns
+    df = df.rename(columns={'geometry.location.lat': 'lat', 'geometry.location.lng': 'lon'})
+   
+
+    # #map with random locations
+    # df = pd.DataFrame(np.random.randn(100, 2) / [50, 50] + [37.76, -122.4], columns=['lat', 'lon'])
+
     #add the business location to the dataframe
     df = df.append({'lat': float(latitude), 'lon': float(longitude)}, ignore_index=True)
-    print(df)
 
     st.pydeck_chart(pdk.Deck(
         map_style=None,
@@ -232,29 +252,29 @@ def dashboard(place):
         st.metric("Reviews", "{}" .format(your_reviews))
     
     with col8:
-        your_comments = 100
-        st.markdown('''
-        <div class="container">
-        ''', unsafe_allow_html=True)
-        st.metric("Comments", "{}" .format(your_comments))
+        pass
 
     with col9:
-        competitors_reviews = 100
+        #average rating of the business from the API
+        try:
+            rival_ratings = []
+            for result in place['nearby_places']:
+                if result['name'] == name:
+                    continue
+                else:
+                    rival_ratings.append(result['rating'])
+            average_rating = round(sum(rival_ratings) / len(rival_ratings), 1)
+            st.write(rival_ratings)
+        except:
+            average_rating = 0
+
         st.markdown('''
         <div class="container">
         ''', unsafe_allow_html=True)
-        st.metric("Reviews", "{}" .format(competitors_reviews))
+        st.metric("Reviews", "{}" .format(average_rating))
     
     with col10:
-        competitors_comments = 100
-        st.markdown('''
-        <div class="container">
-        ''', unsafe_allow_html=True)
-        st.metric("Comments", "{}" .format(competitors_comments))
-
-
-    ranking = 1
-    st.markdown("### Your business is \#{} in the ranking in a radius of {} m" .format(ranking, radius))
+        pass
 
 st.markdown('''
     <style>
@@ -262,71 +282,7 @@ st.markdown('''
             color: #00006d;
         }
 
-        @import "compass/css3";
-
-        $star-color: #f2b01e;
-        $star-default-color: #f0f0f0;
-        $background-color: #2a2a2a;
-
-        body {
-        background: $background-color;
-        padding: 3rem;
-        }
-
-        * {
-        box-sizing: border-box;
-        }
-
-        .rating-box {
-        color: $star-default-color;
-        text-shadow: 0px 1px 10px rgba(0, 0, 0, 1);
-        margin: 3rem auto;
-        height: 3rem;
-        width: 25rem;
-        }
-
-        .rating-star{
-        font-size: 3rem;
-        width: 3rem;
-        height: 3rem;
-        padding: 0 2rem;
-        position: relative;
-        display: block;
-        float:left;
-        }
-
-        .full-star:before {
-        color: $star-color;
-        content: "\2605";
-        position: absolute;
-        left: 0;
-        overflow: hidden;
-        }
-
-        .empty-star:before {
-        content: "\2605";
-        position: absolute;
-        left: 0;
-        overflow: hidden;
-        }
-
-        .half-star:before {
-        color: $star-color;
-        content: "\2605";
-        width: 50%;
-        position: absolute;
-        left: 0;
-        overflow: hidden;
-        }
-
-        .half-star:after {
-        content: '\2605';
-        position: absolute;
-        left: 1.5rem;
-        width: 50%;
-        text-indent: -1.5rem;
-        overflow: hidden;
-        }
+        
     </style>
 ''', unsafe_allow_html=True)
 requirements()

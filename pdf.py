@@ -1,5 +1,5 @@
-#import streamlit as st
-#import matplotlib.pyplot as plt
+import streamlit as st
+import matplotlib.pyplot as plt
 from fpdf import FPDF
 import base64
 from matplotlib.pyplot import fill
@@ -7,6 +7,10 @@ import numpy as np
 from tempfile import NamedTemporaryFile
 
 from xarray import align
+
+def create_download_link(val, filename):
+    b64 = base64.b64encode(val)  # val looks like b'...'
+    return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}.pdf">Download file</a>' 
 
 #framework style
 #pdf_w=210
@@ -119,6 +123,8 @@ class PDF(FPDF):
 	pdf.set_font('Arial', 'B', 12)
 	pdf.text(x = 150, y = 170, txt = 'Other comments:')
 	comment_number(pdf, my_comment_number, other_price_level)
+	html = create_download_link(pdf.output(dest="S").encode("latin-1"), "testfile")
+	st.markdown(html, unsafe_allow_html=True)
 	pdf.output('test.pdf','F')
 
 
